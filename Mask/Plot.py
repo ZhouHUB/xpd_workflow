@@ -34,17 +34,20 @@ def plotmask(maskwoutput=None, maxr=None, xray_image=None,
     imagemask = plt.imshow(xray_image * imask)
     plt.show()
     t = np.arange(0, maxr, 1)
-    plt.plot(t, Calculate.mean1d(xray_image, max=maxr, step=1,
-                                 position_matrix=position_matrix * imask), 'b',
+    plt.plot(t, Calculate.mean1d(xray_image,
+                                 position_matrix=position_matrix * imask,
+                                 step=1), 'b',
              # t, Median1D(xray_image, max=maxr, step=1, position_matrix=position_matrix*imask), 'r',\
              # t,Median1D(xray_image, max=maxr, step=1, position_matrix=position_matrix*imask)-Mean1D(xray_image, max=maxr, step=1, position_matrix=position_matrix*imask)
     )
     plt.show()
 
-    oldstd = np.sqrt(Calculate.variance1d(xray_image, max=maxr, step=1,
-                                          position_matrix=position_matrix))
-    newstd = np.sqrt(Calculate.variance1d(xray_image, max=maxr, step=1,
-                                          position_matrix=position_matrix * imask))
+    oldstd = np.sqrt(
+        Calculate.variance1d(xray_image, position_matrix=position_matrix,
+                             max=maxr, step=1))
+    newstd = np.sqrt(Calculate.variance1d(xray_image,
+                                          position_matrix=position_matrix * imask,
+                                          max=maxr, step=1))
     plt.plot(t, oldstd, 'b', t, newstd, 'r', t, oldstd - newstd, 'g')
     plt.show()
 
@@ -53,15 +56,12 @@ def plotring(image, position_matrix, angles, r, max, step, m):
     im = image[position_matrix == r]
     imang = angles[position_matrix == r]
     imang, im = zip(*sorted(zip(imang, im)))
-    mean = Calculate.statistics1d(image, max=max, step=step,
-                                  position_matrix=position_matrix,
-                                  statistic='mean')
-    med = Calculate.statistics1d(image, max=max, step=step,
-                                 position_matrix=position_matrix,
-                                 statistic='median')
-    std = Calculate.statistics1d(image, max=max, step=step,
-                                 position_matrix=position_matrix,
-                                 statistic=np.std)
+    mean = Calculate.statistics1d(image, position_matrix=position_matrix,
+                                  max=max, step=step, statistic='mean')
+    med = Calculate.statistics1d(image, position_matrix=position_matrix,
+                                 max=max, step=step, statistic='median')
+    std = Calculate.statistics1d(image, position_matrix=position_matrix,
+                                 max=max, step=step, statistic=np.std)
     # mean = np.mean(im)
     # med = np.median(im)
     # std = np.std(im)

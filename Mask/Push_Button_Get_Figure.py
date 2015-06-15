@@ -126,8 +126,8 @@ def tif_to_iq(
         plt.show()
 
     # correct for corrections
-    corrected_image = Calculate.corrections(xray_image, solid, pol,
-                                            geometry_object=a,
+    corrected_image = Calculate.corrections(xray_image, geometry_object=a,
+                                            solid=solid, pol=pol,
                                             polarization_factor=polarization)
 
     position_matrix = None
@@ -141,30 +141,29 @@ def tif_to_iq(
     # Integrate using the global average
     independant_out_array = np.arange(0, max_position + resolution, resolution)
 
-    integrated = Calculate.statistics1d(corrected_image, max=max_position,
-                                        step=resolution,
+    integrated = Calculate.statistics1d(corrected_image,
                                         position_matrix=masked_position,
+                                        max=max_position, step=resolution,
                                         statistic=average_method)
     integrated[np.isnan(integrated)] = 0
 
     uncertainty_array = np.sqrt(
-        Calculate.variance1d(corrected_image,
-                             max=max_position,
-                             step=resolution,
-                             position_matrix=masked_position))
+        Calculate.variance1d(corrected_image, position_matrix=masked_position,
+                             max=max_position, step=resolution))
 
     uncertainty_array[np.isnan(uncertainty_array)] = 0
 
     if plot_verbose is True:
         no_mask_integrated = Calculate.statistics1d(corrected_image,
-                                                max=max_position,
-                                                step=resolution,
-                                                position_matrix=position_matrix,
-                                                statistic=average_method)
-        integrated_mean = Calculate.statistics1d(corrected_image, max=max_position,
-                                        step=resolution,
-                                        position_matrix=masked_position,
-                                        statistic='mean')
+                                                    position_matrix=position_matrix,
+                                                    max=max_position,
+                                                    step=resolution,
+                                                    statistic=average_method)
+        integrated_mean = Calculate.statistics1d(corrected_image,
+                                                 position_matrix=masked_position,
+                                                 max=max_position,
+                                                 step=resolution,
+                                                 statistic='mean')
         fig, ax = plt.subplots()
         ax.plot(independant_out_array, integrated, 'g', label='Median I[Q]')
         ax.plot(independant_out_array, integrated_mean, 'b', label='Mean I[Q]')
@@ -180,10 +179,9 @@ def tif_to_iq(
         plt.show()
 
         no_mask_uncertainty_percent_array = np.sqrt(
-        Calculate.variance1d(corrected_image,
-                             max=max_position,
-                             step=resolution,
-                             position_matrix=position_matrix)) / no_mask_integrated
+            Calculate.variance1d(corrected_image,
+                                 position_matrix=position_matrix,
+                                 max=max_position, step=resolution)) / no_mask_integrated
         fig, ax = plt.subplots()
         ax.plot(independant_out_array, integrated, 'g', label='I[Q]')
         ax.plot(independant_out_array, no_mask_integrated, 'k', label='No '
@@ -206,25 +204,26 @@ def tif_to_iq(
         legend = ax.legend(loc='upper right')
         plt.show()
 
-        ring_std = Calculate.statistics1d(corrected_image, max=max_position,
-                               step=resolution,
-                               position_matrix=masked_position,
-                               statistic=np.std) / integrated
+        ring_std = Calculate.statistics1d(corrected_image,
+                                          position_matrix=masked_position,
+                                          max=max_position, step=resolution,
+                                          statistic=np.std) / integrated
 
-        ring_std_no_mask = Calculate.statistics1d(corrected_image, max=max_position,
-                               step=resolution,
-                               position_matrix=position_matrix,
-                               statistic=np.std) / no_mask_integrated
-        ring_s = Calculate.statistics1d(corrected_image, max=max_position,
-                               step=resolution,
-                               position_matrix=masked_position,
-                               statistic=stats.skew)
+        ring_std_no_mask = Calculate.statistics1d(corrected_image,
+                                                  position_matrix=position_matrix,
+                                                  max=max_position,
+                                                  step=resolution,
+                                                  statistic=np.std) / no_mask_integrated
+        ring_s = Calculate.statistics1d(corrected_image,
+                                        position_matrix=masked_position,
+                                        max=max_position, step=resolution,
+                                        statistic=stats.skew)
 
         ring_s_no_mask = Calculate.statistics1d(corrected_image,
+                                                position_matrix=position_matrix,
                                                 max=max_position,
-                               step=resolution,
-                               position_matrix=position_matrix,
-                               statistic=stats.skew)
+                                                step=resolution,
+                                                statistic=stats.skew)
         fig, ax = plt.subplots()
         ax.plot(independant_out_array, ring_std, 'g',
                 label='Ring Standard Deviation')
