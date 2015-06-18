@@ -169,9 +169,9 @@ def load_chi_file(chi_file, skiplines=None):
             return None, None
     elif skiplines is None:
         with open(chi_file) as my_file:
-            for num, line in enumerate(my_file,1):
+            for num, line in enumerate(my_file, 1):
                 if 'START DATA WITH HEADER' in line:
-                    skiplines=num+1
+                    skiplines = num+1
                     break
     data = np.loadtxt(chi_file, skiprows=skiplines)
     return data, chi_file
