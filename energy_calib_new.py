@@ -8,7 +8,15 @@ import scipy.stats
 import numpy as np
 import scipy.signal
 import quantities as pq
+import matplotlib
+import matplotlib.pyplot as plt
 
+plt.ioff()
+font = {'family': 'normal',
+        # 'weight' : 'bold',
+        'size': 18}
+
+matplotlib.rc('font', **font)
 
 def lamda_from_bragg(th, d, n):
     return 2 * d * np.sin(th / 2.) / n
@@ -36,7 +44,7 @@ def find_peaks(chi, sides=6):
 
 
 def calibrate_energy(stack, calibs, relative_positions, calibration_file,
-                     sides=6):
+                     sides=12):
     stack_peaks = []
     # For every image in the routine find the peaks
     for s, calib, pos in zip(stack, calibs, relative_positions):
@@ -65,16 +73,16 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
             out = mod.fit(chi[lidx: ridx], pars,
                           x=bins[lidx: ridx])
             center = pq.UncertainQuantity(out.values['center'], pq.m,
-                                 out.params['center'].stderr)
+                                          out.params['center'].stderr)
             # center = out.values['center'] * pq.m
             # get peak center from out
             fitted_peak_centers.append(center)
         stack_peaks.append(fitted_peak_centers)
 
         # print fitted_peak_centers
-        # plt.plot(bins[:-1], chi)
-        # plt.plot(bins[:-1][peak_centers], chi[peak_centers], 'ro')
-    # plt.show()
+        plt.plot(bins[:-1], chi)
+        plt.plot(bins[:-1][peak_centers], chi[peak_centers], 'ro')
+    plt.show()
     # pair two detector positions
     D0s = np.zeros(len(stack_peaks)) * pq.mm
     n_DOs = np.zeros(len(stack_peaks))
@@ -95,7 +103,7 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
         thetas = []
 
         for d0, d1 in zip(peaksi, peaksj):
-            print np.arctan(((d1 - d0) / dD).simplified)
+            # print np.arctan(((d1 - d0) / dD).simplified)
             D0_l.append(-d0 * dD / (d0 - d1))
             thetas.append(np.arctan(((d1 - d0) / dD).simplified))
         theta_l.append(thetas)
@@ -104,35 +112,42 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
         D0s[j] += rdj + ave_D0
         n_DOs[i] += 1
         n_DOs[j] += 1
-        # ave_D0s = D0s / n_DOs
-        # print ave_D0s
         th = np.asarray(theta_l[-1]) * pq.radians
         d = np.loadtxt(calibration_file) * pq.angstrom
         d = d[:len(th)]
-        # ns = [3, 4, 8, 11, 12]
-        ns = [8, 6, 12, 24, 8]
-        n = np.asarray(ns)
         lam = lamda_from_bragg(th, d, 1)
         e = pq.constants.h * pq.units.speed_of_light / lam
         es.append(e.rescale(pq.keV))
         lams.append(lam)
-        print len(e)
-        print np.average(e.rescale(pq.keV))
-        print np.average(lam)
-    print np.average(lams), np.average(es)
-        # need a way to correctly average the positions
+        # print len(e)
+        # print np.average(e.rescale(pq.keV))
+        # print np.average(lam)
+    nplams = None
+    npe = None
+    for l, e_ele in zip(lams, es):
+        if nplams is None:
+            nplams = l
+            npe = e_ele
+        else:
+            nplams = np.concatenate((nplams, l))
+            npe = np.concatenate((npe, e_ele))
+    print np.mean(nplams * pq.angstrom), np.std(nplams)
+    print np.mean(npe * pq.keV), np.std(npe)
+    # need a way to correctly average the positions
 
 
 if __name__ == '__main__':
     import os
-    import matplotlib.pyplot as plt
+
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     from pims.image_sequence import ImageSequence
     from pims.tiff_stack import TiffSeries
     # plt.ion()
-    dir_name = '/mnt/bulk-data/research_data/energy_calib2'
-    num = range(2)
-    f_names = [os.path.join(dir_name, 'Ni-STD_Calib_D1-000' + str(i).zfill(2))
+    # dir_name = '/mnt/bulk-data/research_data/energy_calib2'
+    dir_name = '/media/usb0/Calib_6_64_2015'
+    num = range(3)
+    f_stem = 'Ni_STD_Calib-A-D-2rev-000'
+    f_names = [os.path.join(dir_name, f_stem + str(i).zfill(2))
                for i in num]
     calibs = [f + '.poni' for f in f_names]
 
@@ -140,5 +155,7 @@ if __name__ == '__main__':
     # stack = TiffSeries([f + '.tif' for f in f_names])
     # stack = ImageSequence([f + '.tif' for f in f_names])
     stack = [TiffStack(f + '.tif') for f in f_names]
-    relative_positions = np.asarray([13.80 * i for i in num]) * pq.mm
-    calibrate_energy(stack, calibs, relative_positions, os.path.join(dir_name, 'Ni03.cal'))
+    relative_positions = np.asarray([13.80 * -2. * i for i in num]) * pq.mm
+    calibrate_energy(stack, calibs, relative_positions,
+                     os.path.join('/mnt/bulk-data/research_data/energy_calib2',
+                                  'Ni03.cal'))
