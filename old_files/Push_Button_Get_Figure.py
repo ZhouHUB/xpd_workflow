@@ -26,7 +26,7 @@ def tif_to_iq(
         image_path=None, out_ending='',
         # Correction info
         solid=False, pol=True, polarization=0.95,
-        # Mask info
+        # old_files info
         generate_mask=False, mask_file=None, initial_m=None,
         # integration info
         space='Q', resolution=None, average_method='median',
@@ -185,7 +185,7 @@ def tif_to_iq(
         fig, ax = plt.subplots()
         ax.plot(independant_out_array, integrated, 'g', label='I[Q]')
         ax.plot(independant_out_array, no_mask_integrated, 'k', label='No '
-                                                                      'Mask I[Q]')
+                                                                      'old_files I[Q]')
         ax.plot(independant_out_array, integrated - no_mask_integrated, 'r',
                 label='Difference')
         legend = ax.legend(loc='upper right')
@@ -228,7 +228,7 @@ def tif_to_iq(
         ax.plot(independant_out_array, ring_std, 'g',
                 label='Ring Standard Deviation')
         ax.plot(independant_out_array, ring_std_no_mask, 'b',
-                label='Ring Standard Deviation No Mask')
+                label='Ring Standard Deviation No old_files')
         legend = ax.legend(loc='upper right')
         plt.show()
 
@@ -236,7 +236,7 @@ def tif_to_iq(
         ax.plot(independant_out_array, ring_s, 'g',
                 label='Ring Skew')
         ax.plot(independant_out_array, ring_s_no_mask, 'b',
-                label='Ring Skew No Mask')
+                label='Ring Skew No old_files')
         legend = ax.legend(loc='upper right')
         plt.show()
 

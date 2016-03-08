@@ -18,7 +18,7 @@ def get_total_bounding_box(qmax, qmin, rmax, rmin, dq, dsq):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from Mask.IO import load_chi_file
+    from old_files.IO import load_chi_file
     file_loc = '/mnt/bulk-data/research_data/Brown_beamtime/Beamtime/Mar2014/7_7_7_NiPd_Ambient/NiPd_LongRun/7_7_7_NiPd_AsIs_300K-00020_sum_qspace.chi'
     data, filenname = load_chi_file(file_loc, 29)
     print data.shape

@@ -98,3 +98,5 @@ generated/
 
 # ipython notebook
 .ipynb_checkpoints/
+
+old_files/

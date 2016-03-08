@@ -284,7 +284,7 @@ def generate_mask(xray_image, position_matrix=None, max=None, average=None,
         Percentage of pixels which were too high/low
     totalper: float
         Percentage of pixels masked
-    Mask: 2d array
+    old_files: 2d array
         The mask for the image, in this case 1 is maksed and 0 is not
     iMask: 2d array
         The maks inverted, 0 is masked, 1 is not
@@ -340,7 +340,7 @@ def write_mask(xray_image, geometry_object, mask=None, initial_m=None,
     Returns
     ------
     ndarray:
-        Mask, 0 is masked
+        old_files, 0 is masked
     """
     print'start mask write'
     a = geometry_object
@@ -402,7 +402,7 @@ def write_mask(xray_image, geometry_object, mask=None, initial_m=None,
 
         fig, ax = plt.subplots()
         ax.plot(q, q_rawmean, 'r', label='No mask')
-        ax.plot(q, newmean, 'g', label='Mask')
+        ax.plot(q, newmean, 'g', label='old_files')
 
         ax.legend(loc='upper right')
         plt.show()

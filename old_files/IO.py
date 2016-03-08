@@ -130,11 +130,11 @@ def save_chi(integrated, geometry_object, filename, mask_file_name,
         f.write('\nFile Name = ' + str(input_file)+'\n')
 
     if type(mask_file_name) is tuple or type(mask_file_name) is list:
-        f.write('\nMask File list:\n')
+        f.write('\nold_files File list:\n')
         for item in mask_file_name:
             f.write(str(item))
     else:
-        f.write('\nMask File = ' + str(mask_file_name) +'\n \n')
+        f.write('\nold_files File = ' + str(mask_file_name) +'\n \n')
 
     f.write('START DATA WITH HEADER\n')
     f.write('Q/TTH I[Q/TTH] sigma_I[Q/TTH] \n')
@@ -182,7 +182,7 @@ def loadmask(mask=None):
 
     """
     if mask is None:
-        print 'Open Mask'
+        print 'Open old_files'
         mask = tkFileDialog.askopenfilename()
     if mask == '':
         user_mask = None

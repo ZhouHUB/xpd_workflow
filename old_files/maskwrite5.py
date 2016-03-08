@@ -132,11 +132,11 @@ def maskw(m, edge, xray_image, imax, jmax, maxr, roundR, listcounter):
 
     Returns
     -------
-    highper, lowper, totalper, Mask, iMask, StatsA
+    highper, lowper, totalper, old_files, iMask, StatsA
 
 
     """
-    # Mask=np.zeros((imax,jmax))
+    # old_files=np.zeros((imax,jmax))
     # highper=np.zeros(maxr+1)
     # lowper=np.zeros(maxr+1)
     # StatsA=[]
@@ -195,7 +195,7 @@ def plotmask(maskwoutput=None, maxr=None, xray_image=None,
     Plots the mask metrics allowing for evaluation of mask quality
     """
 
-    # highper,lowper,totalper, Mask, iMask,StatsA=maskwoutput
+    # highper,lowper,totalper, old_files, iMask,StatsA=maskwoutput
     highper, lowper, totalper, Mask, iMask = maskwoutput
     # May need matplotlib help from Tom on this
     plt.ioff()

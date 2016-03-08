@@ -18,6 +18,7 @@ font = {'family': 'normal',
 
 matplotlib.rc('font', **font)
 
+
 def lamda_from_bragg(th, d, n):
     return 2 * d * np.sin(th / 2.) / n
 
@@ -56,11 +57,12 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
             geo = pyFAI.geometry.Geometry(**calib)
 
         r = geo.rArray(img.shape) * pq.m
+        r[r < .01] = -1. * pq.m
         res = geo.pixel1 * pq.m
         bins = np.arange(0. * pq.m, r.max(), res)
         chi = scipy.stats.binned_statistic(r.ravel(), img.ravel(),
                                            statistic='mean',
-                                           bins=bins)[0]
+                                           bins=bins, range=(0, np.max(r)))[0]
 
         lidxs, ridxs, peak_centers = find_peaks(chi, sides=sides)
 
@@ -138,24 +140,24 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
 
 if __name__ == '__main__':
     import os
+    import subprocess
 
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     from pims.image_sequence import ImageSequence
     from pims.tiff_stack import TiffSeries
-    # plt.ion()
+
+    calibrant = os.path.join('/mnt/bulk-data/research_data/energy_calib2',
+                                  'Ni03.cal')
     # dir_name = '/mnt/bulk-data/research_data/energy_calib2'
-    dir_name = '/media/usb0/Calib_6_64_2015'
-    num = range(3)
-    f_stem = 'Ni_STD_Calib-A-D-2rev-000'
+    dir_name = '/mnt/bulk-data/Dropbox/Temp-Data'
+    num = [0, 1, 3, 4]
+    f_stem = 'Ni_STD_14p3_acnd-000'
     f_names = [os.path.join(dir_name, f_stem + str(i).zfill(2))
                for i in num]
     calibs = [f + '.poni' for f in f_names]
 
-    # print ImageSequence(['/mnt/work-data/dev/xpd_workflow/energy_calib2/Ni-STD_Calib_D1-00000.tif'])
-    # stack = TiffSeries([f + '.tif' for f in f_names])
-    # stack = ImageSequence([f + '.tif' for f in f_names])
+    print f_names
     stack = [TiffStack(f + '.tif') for f in f_names]
-    relative_positions = np.asarray([13.80 * -2. * i for i in num]) * pq.mm
+    relative_positions = np.asarray([27.6 * 1. * i for i in num]) * pq.mm
     calibrate_energy(stack, calibs, relative_positions,
-                     os.path.join('/mnt/bulk-data/research_data/energy_calib2',
-                                  'Ni03.cal'))
+                     calibrant)
