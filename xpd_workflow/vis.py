@@ -21,7 +21,12 @@ class StackExplorer(QtGui.QMainWindow):
         self.setWindowTitle('StackExplorer')
         self._main_window = CrossSectionMainWindow(data_list=data_list,
                                                    key_list=key_list,
-                                                   cmap='cubehelix')
+                                                   cmap='cubehelix',
+                                                   intensity_scaling='percentile',
+                                                   img_min=85,
+                                                   img_max=100,
+                                                   norm='log'
+                                                   )
 
         self._main_window.setFocus()
         self.setCentralWidget(self._main_window)
@@ -32,11 +37,13 @@ if __name__ == '__main__':
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     import fabio
 
-    # folder, name = ('/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_RT', '2nm_Au_RT_median_sum')
+    folder, name = (
+        '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_Temp/Au2nm_100-200',
+        '2nm_Au_RT_median_sum')
     # folder = '/mnt/bulk-data/research_data/Low T-MST-summed'
     # folder ='/mnt/bulk-data/Dropbox/BNL_Project/misc/CGO_summed/CGO_summed/Sample1_350um'
     # folder = '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_Cold/'
-    folder = '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/SiGe/'
+    # folder = '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/SiGe/'
     file_names = [f for f in os.listdir(folder) if
                   f.endswith('.tif') and 'raw' not in f and 'dark' not in f
                   and 'Sample-1' not in f]

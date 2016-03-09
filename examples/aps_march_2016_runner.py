@@ -1,9 +1,10 @@
 import os
 import ConfigParser
 from xpd_workflow.mask_tools import *
+import fabio
 
 # move to the target folder
-target_folder = '/path/to/folder'
+target_folder = '/media/usb0/Beamtime/APS_March_2016/1'
 os.chdir(target_folder)
 
 # get all the files in the folder which are appropriate
@@ -20,9 +21,18 @@ img = np.sum(imgs, 0)
 config = ConfigParser.ConfigParser()
 config.read('config.txt')
 
-geo = pyFAI.load(config.get('beamline_info', 'configuration_folder'))
+config_folder = config.get('beamline_info', 'configuration_folder')
+start_mask_file = config.get('beamline_info', 'mask_file')
+config_file = [f for f in os.listdir(config_folder) if f.endswith('.poni')][0]
+geo = pyFAI.load(config_file)
 
 img /= geo.polarization(shape=img.shape, factor=.95)
+
+if start_mask_file.endswith('.npy'):
+    start_mask = np.load(start_mask)
+elif start_mask_file.endswith('.msk'):
+    start_mask = fabio.open(start_mask_file).data
+    # We may need to flip the mask
 
 start_mask = np.flipud(start_mask)
 msk0 = mask_beamstop(img, geo, .005)
