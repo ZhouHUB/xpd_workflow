@@ -6,7 +6,6 @@ import scipy.stats as sts
 from copy import deepcopy as dc
 import math
 import os
-import mkl
 
 
 def mask_beamstop(img, geometry, beamstop_radius, mask=None):
@@ -159,7 +158,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
-    from skxray.io.save_powder_output import save_output
+
 
     # load experiment information
     geo = pyFAI.load(
