@@ -35,7 +35,7 @@ elif start_mask_file.endswith('.msk'):
     # We may need to flip the mask
 
 start_mask = np.flipud(start_mask)
-msk0 = mask_beamstop(img, geo, .005)
+msk0 = mask_beamstop(geo, .005)
 msk1 = mask_edge(img, 10)
 msk2 = mask_radial_edge(img, geo, 310)
 

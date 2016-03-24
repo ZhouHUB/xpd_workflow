@@ -28,7 +28,7 @@ img /= geo.polarization(shape=img.shape, factor=.95)
 
 # produce masks
 start_mask = np.flipud(start_mask)
-msk0 = mask_beamstop(img, geo, .005)
+msk0 = mask_beamstop(geo, .005)
 msk1 = mask_edge(img, 10)
 msk2 = mask_radial_edge(img, geo, 310)
 

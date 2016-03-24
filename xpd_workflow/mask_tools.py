@@ -6,23 +6,20 @@ import scipy.stats as sts
 from copy import deepcopy as dc
 import math
 import os
-import mkl
 
 
-def mask_beamstop(img, geometry, beamstop_radius, mask=None):
+def mask_beamstop(pixel_positions, beamstop_radius, mask=None):
     if mask is None:
-        mask = np.zeros(img.shape)
-    r = geometry.rArray(img.shape)
-    z = np.where(r < beamstop_radius)
+        mask = np.zeros(pixel_positions.shape)
+    z = np.where(pixel_positions < beamstop_radius)
     mask[z] = 1
     return mask.astype(int)
 
 
-def mask_radial_edge(img, geometry, inner_radius, mask=None):
+def mask_radial_edge(img, pixel_positions, inner_radius, mask=None):
     if mask is None:
         mask = np.zeros(img.shape)
-    r = geometry.qArray(img.shape)
-    z = np.where(r > inner_radius)
+    z = np.where(pixel_positions > inner_radius)
     mask[z] = 1
     return mask.astype(int)
 
@@ -203,7 +200,7 @@ if __name__ == '__main__':
     # img *= geo.solidAngleArray(img.shape)
 
     # produce masks
-    msk0 = mask_beamstop(img, geo, .005)
+    msk0 = mask_beamstop(geo, .005)
     msk1 = mask_edge(img, 10)
     msk2 = mask_radial_edge(img, geo, 310)
 
