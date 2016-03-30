@@ -36,6 +36,8 @@ for hdr in hdrs:
         r = geo.rArray(img.shape)
         q = geo.qArray(img.shape)
 
+        plt.imshow(img[np.invert])
+
         fr = r.ravel()
         fq = q.ravel()
         fimg = img.ravel()
