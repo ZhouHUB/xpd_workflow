@@ -36,10 +36,10 @@ if __name__ == '__main__':
     # folder = '/media/sf_Data/5/S5/temp_exp'
     # folder = '/media/sf_Data/18/S18/temp_exp'
     # folder = '/media/sf_Data/S6/'
-    folder = '/media/sf_Data/1/S1/temp_exp'
-    key_list = [f for f in os.listdir(folder) if f.endswith('.gr')]
+    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/multi_sample/test'
+    # key_list = [f for f in os.listdir(folder) if f.endswith('.gr')]
     # key_list = [f for f in os.listdir(folder) if f.endswith('.fq')]
-    # key_list = [f for f in os.listdir(folder) if f.endswith('.chi')]
+    key_list = [f for f in os.listdir(folder) if f.endswith('.chi')]
     key_list.sort()
     # key_list = key_list[::20]
     key_list = key_list

@@ -25,7 +25,7 @@ class StackExplorer(QtGui.QMainWindow):
                                                    norm='log',
                                                    intensity_scaling='percentile',
                                                    img_min=5.,
-                                                   img_max=100.)
+                                                   img_max=95.)
 
         self._main_window.setFocus()
         self.setCentralWidget(self._main_window)
@@ -36,14 +36,14 @@ if __name__ == '__main__':
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     import fabio
 
-    folder = '/media/sf_Data/S6'
+    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/multi_sample'
     file_names = [f for f in os.listdir(folder) if
                   f.endswith('.tif') and 'raw' not in f and 'dark' not in f
                   and 'd95' not in f]
     print(file_names)
     files = [os.path.join(folder, f) for f in file_names]
     files.sort()
-    files = files[::5]
+    files = files[:]
     img_stack = [TiffStack(f) for f in files]
 
     imgs = [np.rot90(s[0], 3) for s in img_stack]
