@@ -21,12 +21,11 @@ class StackExplorer(QtGui.QMainWindow):
         self.setWindowTitle('StackExplorer')
         self._main_window = CrossSectionMainWindow(data_list=data_list,
                                                    key_list=key_list,
-                                                   cmap='cubehelix',
+                                                   cmap='viridis',
+                                                   norm='log',
                                                    intensity_scaling='percentile',
-                                                   img_min=85,
-                                                   img_max=100,
-                                                   norm='log'
-                                                   )
+                                                   img_min=5.,
+                                                   img_max=100.)
 
         self._main_window.setFocus()
         self.setCentralWidget(self._main_window)
@@ -37,34 +36,21 @@ if __name__ == '__main__':
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     import fabio
 
-    folder, name = (
-        '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_Temp/Au2nm_100-200',
-        '2nm_Au_RT_median_sum')
-    # folder = '/mnt/bulk-data/research_data/Low T-MST-summed'
-    # folder ='/mnt/bulk-data/Dropbox/BNL_Project/misc/CGO_summed/CGO_summed/Sample1_350um'
-    # folder = '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_Cold/'
-    # folder = '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/SiGe/'
+    folder = '/media/sf_Data/S6'
     file_names = [f for f in os.listdir(folder) if
                   f.endswith('.tif') and 'raw' not in f and 'dark' not in f
-                  and 'Sample-1' not in f]
+                  and 'd95' not in f]
     print(file_names)
     files = [os.path.join(folder, f) for f in file_names]
-    # mask_files = [os.path.join(folder, 'xpd_pdf_mask_'+f.split('.')[0] + '.npy') for f in
-    #               file_names]
-    # msks = [fabio.open(f).data for f in mask_files]
-    # msks = [np.load(f) for f in mask_files]
+    files.sort()
+    files = files[::5]
     img_stack = [TiffStack(f) for f in files]
 
     imgs = [np.rot90(s[0], 3) for s in img_stack]
     a = imgs[0] - imgs[1]
     imgs = [s + np.abs(s.min()) + .1 for s in imgs]
-    # imgs = [img * np.invert(msk) for (img, msk) in zip(imgs, msks)]
-    # imgs = [s + .1 for s in imgs]
     key_list = files
     data_list = imgs
-    key_list.append('difference')
-    b = a - np.min(a) + .1
-    data_list.append(b)
     app = QtGui.QApplication(sys.argv)
     tt = StackExplorer(key_list, data_list)
     tt.show()
