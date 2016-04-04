@@ -71,12 +71,14 @@ def ring_blur_mask(img, r, rsize, alpha, bins=None, mask=None):
     mean
     Parameters
     ----------
-    img: 1darray
-        The flattened image
-    r: 1darray
-        The flattened array which maps pixels to radii
-    alpha: float or 1darray
-        Then number of acceptable standard deviations
+    img: 2darray
+        The  image
+    r: 2darray
+        The  array which maps pixels to radii
+    alpha: float or tuple or, 1darray
+        Then number of acceptable standard deviations, if tuple then we use
+        a linear distribution of alphas from alpha[0] to alpha[1], if array
+        then we just use that as the distribution of alphas
     bins: int, optional
         Number of bins used in the integration, if not given then max number of
         pixels +1
@@ -103,6 +105,8 @@ def ring_blur_mask(img, r, rsize, alpha, bins=None, mask=None):
                                 range=[0, r.max()], statistic='mean')[0]
     std = sts.binned_statistic(msk_r, msk_img, bins=bins,
                                range=[0, r.max()], statistic=np.std)[0]
+    if type(alpha) is tuple:
+        alpha = np.linspace(alpha[0], alpha[1], bins)
     threshold = alpha * std
     lower = mean - threshold
     upper = mean + threshold
@@ -111,7 +115,7 @@ def ring_blur_mask(img, r, rsize, alpha, bins=None, mask=None):
     too_low = img < lower[int_r]
     too_hi = img > upper[int_r]
 
-    mask = mask * too_low * too_hi
+    mask = mask * ~too_low * ~too_hi
     return mask.astype(bool).ravel()
 
 
