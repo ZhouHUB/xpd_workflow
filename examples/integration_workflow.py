@@ -8,6 +8,7 @@ from filestore.api import db_connect as fs_db_connect
 from filestore.api import retrieve
 from sidewinder_spec.utils.handlers import *
 from xpd_workflow.mask_tools import *
+from diffpy.pdfgetx import PDFGetter
 
 # from matplotlib.colors import LogNorm
 
@@ -16,9 +17,10 @@ fs_db_connect(
 mds_db_connect(
     **{'database': 'data-processing-dev', 'host': 'localhost', 'port': 27017})
 
+plot = False
 # Get headers of interest
 hdrs = db()
-# hdrs = db(uid='fb89f302-4fb9-4f88-b7f2-6ec60b10dc06')
+# hdrs = db()
 for hdr in hdrs:
     print(hdr['start']['run_folder'])
     # Get calibrations
@@ -32,8 +34,10 @@ for hdr in hdrs:
         [g.dist for g in geos]) * 100  # pyFAI reports in meters
     # Get starting masks
     # start_masks = [retrieve(p) for p in hdr['start']['mask']]
-    events = [e for e in get_events(hdr) if e['data']['detz'] < 30.]
+    events = [e for e in get_events(hdr) if 'detz' in e['data'].keys() and e['data']['detz'] < 30.]
     # for event in get_events(hdr):
+    grs = []
+    rs = []
     for event in events:
         # Pull relevant data into local vars
         data = event['data']
@@ -48,7 +52,7 @@ for hdr in hdrs:
         img /= geo.polarization(img.shape, .95)
 
         # start_mask = start_masks[cal_idx]
-        start_mask = np.zeros(img.shape, dtype=int)
+        start_mask = np.zeros(img.shape, dtype=int).ravel()
         r = geo.rArray(img.shape)
         q = geo.qArray(img.shape)
 
@@ -56,7 +60,7 @@ for hdr in hdrs:
         fq = q.ravel()
         fimg = img.ravel()
 
-        a, b, c = geo.integrate2d(img, 2000, 360)
+        # a, b, c = geo.integrate2d(img, 2000, 360)
         # a, b, c = geo.integrate2d(geo.polarization(img.shape, 1.5), 2000)
         # plt.imshow(a[150:, 1000:], aspect='auto')
         # plt.show()
@@ -73,10 +77,10 @@ for hdr in hdrs:
         # tt.show()
         # sys.exit(app.exec_())
 
-        x = np.arange(0, 360)
-        y = a[:, 1000]
-        plt.plot(x, y)
-        plt.show()
+        # x = np.arange(0, 360)
+        # y = a[:, 1000]
+        # plt.plot(x, y)
+        # plt.show()
 
         # spl = UnivariateSpline(x, y)
         # plt.plot(x, y)
@@ -91,13 +95,19 @@ for hdr in hdrs:
         bs_kwargs = {'bins': bins,
                      'range': [0, fq.max()]}
 
-        # median = sts.binned_statistic(*bs_args, statistic='median', **bs_kwargs)
-        # mean = sts.binned_statistic(*bs_args, statistic='mean', **bs_kwargs)
-        # std = sts.binned_statistic(*bs_args, statistic=np.std, **bs_kwargs)
-        #
-        # plt.plot(median[1][:-1], median[0], label='median no mask')
-        # plt.plot(mean[1][:-1], mean[0], label='mean no mask')
-        # plt.plot(std[1][:-1], std[0], label='std no mask')
+        if plot:
+            f, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+
+            median = sts.binned_statistic(*bs_args, statistic='median',
+                                          **bs_kwargs)
+            mean = sts.binned_statistic(*bs_args, statistic='mean',
+                                        **bs_kwargs)
+            std = sts.binned_statistic(*bs_args, statistic=np.std, **bs_kwargs)
+
+            x = median[1][:-1]
+            ax1.plot(x, median[0], label='median no mask')
+            ax2.plot(x, mean[0], label='mean no mask')
+            ax3.plot(x, std[0], label='std no mask')
         # plt.legend(loc='best')
         # plt.show()
 
@@ -107,7 +117,7 @@ for hdr in hdrs:
         # msk2 = mask_radial_edge(img, r, .2)
         initial_mask = msk0 | start_mask
         tmsk = msk0 | start_mask
-
+        '''
         for i in [
             # 10,
             # 9, 8, 7, 6,
@@ -124,25 +134,47 @@ for hdr in hdrs:
             print('pixels masked',
                   (rbmsk.sum() - tmsk.sum()) / img.size * 100., '%')
             tmsk = tmsk | rbmsk
-
+        # '''
         tmsk = tmsk.astype(np.bool)
-        plt.imshow(tmsk)
-        plt.show()
+        # plt.imshow(tmsk)
+        # plt.show()
         ftmsk = tmsk.ravel()
         fmsk_img = fimg[np.invert(ftmsk)]
         fmsk_q = fq[np.invert(ftmsk)]
 
         # Post masking data
-        mr = dc(r)
-        mr[tmsk.astype(np.bool)] = -1
-
         bs_args = (fmsk_q, fmsk_img)
         median = sts.binned_statistic(*bs_args, statistic='median',
                                       **bs_kwargs)
-        mean = sts.binned_statistic(*bs_args, statistic='mean', **bs_kwargs)
-        std = sts.binned_statistic(*bs_args, statistic=np.std, **bs_kwargs)
-        plt.plot(median[1][:-1], median[0], label='median')
-        plt.plot(mean[1][:-1], mean[0], label='mean ')
-        plt.plot(std[1][:-1], std[0], label='std')
-        plt.legend(loc='best')
+        if plot:
+            mean = sts.binned_statistic(*bs_args, statistic='mean',
+                                        **bs_kwargs)
+            std = sts.binned_statistic(*bs_args, statistic=np.std, **bs_kwargs)
+            ax1.plot(x, median[0], label='median')
+            ax2.plot(x, mean[0], label='mean')
+            ax3.plot(x, std[0], label='std')
+            ax1.set_title('median')
+            ax2.set_title('mean')
+            ax3.set_title('std')
+            # plt.legend(loc='best')
+            plt.show()
+        print('start pdf')
+        z = PDFGetter()
+        d1 = {'qmin': 1.5, 'qmax': 34, 'qmaxinst': 34, 'rpoly': .9, 'rmax':40.,
+              'composition': 'Pr2NiO4', 'dataformat': 'Qnm',
+              }
+
+        d3 = {'qmin': 1.5, 'qmax': 25, 'qmaxinst': 25, 'rpoly': .9, 'rmax':40.,
+              'composition': 'Pr2NiO4', 'dataformat': 'Qnm',
+              }
+        d2 = {'qmin': 1.5, 'qmax': 28, 'qmaxinst': 28, 'rpoly': .9, 'rmax': 40.,
+              'composition': 'Pr2NiO4', 'dataformat': 'Qnm',
+              }
+
+        if not plot:
+            x = median[1][:-1]
+        r, gr = z(x, median[0], **d1)
+        rs.append(r)
+        grs.append(gr)
+        plt.plot(r, gr)
         plt.show()

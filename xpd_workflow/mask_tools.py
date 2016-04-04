@@ -31,7 +31,7 @@ def mask_edge(img, edge_size, mask=None):
     mask[:, -edge_size:] = 1
     mask[:edge_size, :] = 1
     mask[-edge_size:, :] = 1
-    return mask.astype(int)
+    return mask.ravel().astype(int)
 
 
 def low_pixel_count_mask(img, geometry, bins, min_pixels, mask=None):
@@ -50,21 +50,20 @@ def low_pixel_count_mask(img, geometry, bins, min_pixels, mask=None):
     return mask.astype(int)
 
 
-def ring_blur_mask(img, geometry, alpha, bins=None, mask=None):
+def ring_blur_mask(fimg, fr, rsize, alpha, bins=None, mask=None):
     if mask is None:
         mask = np.zeros(img.shape).astype(bool)
-    r = geometry.rArray(img.shape)
-    int_r = np.around(r / geometry.pixel1).astype(int)
+    int_r = np.around(fr / rsize).astype(int)
     if bins is None:
         bins = int_r.max() + 1
-    mr = dc(r)
-    mr[mask] = -1
+    fmsk_img = fimg[np.invert(mask)]
+    fmsk_r = fimg[np.invert(mask)]
 
     # integration
-    mean = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
-                                range=[0, mr.max()], statistic='mean')[0]
+    mean = sts.binned_statistic(fmsk_r, fmsk_img, bins=bins,
+                                range=[0, fmsk_r.max()], statistic='mean')[0]
     std = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
-                               range=[0, mr.max()], statistic=np.std)[0]
+                               range=[0, fmsk_r.max()], statistic=np.std)[0]
 
     threshold = alpha * std
     lower = mean - threshold
