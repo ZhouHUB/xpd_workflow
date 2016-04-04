@@ -23,10 +23,10 @@ plot = False
 
 # Get headers of interest
 hdrs = db(
-    is_calibration=False
-    # is_calibration=True
+    # is_calibration=False
+    is_calibration=True
 )
-
+hdrs = [db['b4875060-5a23-45da-bb8c-ef2cded62aa3']]
 for hdr in hdrs:
     dm = DataMuxer()
     print(hdr['start']['run_folder'])
@@ -48,12 +48,16 @@ for hdr in hdrs:
     dm.append_events(get_events(hdr))
     dm.to_sparse_dataframe()
     binned = dm.bin_on('img', interpolation={'T': 'linear'})
-    b = binned[['I0', 'T', 'detz', 'img']]
+    b = binned[['I0',
+                # 'T',
+                'detz', 'img']]
     Ts = []
     rs = []
     grs = []
 
-    for i, (i0, T, detz, img) in b.iterrows():
+    for i, (i0,
+            # T,
+            detz, img) in b.iterrows():
         if detz < 30.:
 
             # Find the correct calibration file
@@ -62,7 +66,7 @@ for hdr in hdrs:
             img /= geo.polarization(img.shape, .95)
 
             # start_mask = start_masks[cal_idx]
-            start_mask = np.zeros(img.shape, dtype=int).ravel().astype(bool)
+            start_mask = np.ones(img.shape, dtype=int).ravel().astype(bool)
             r = geo.rArray(img.shape)
             q = geo.qArray(img.shape)
 
@@ -78,26 +82,23 @@ for hdr in hdrs:
 
             # Needs to work on a real 2D image
             msk0 = mask_edge(img.shape, 30)
-            initial_mask = msk0 | start_mask
-            tmsk = msk0 | start_mask
+
+            tmsk = msk0 * start_mask
+
             '''
             for i in [2]:
                 print(i)
-                rbmsk = ring_blur_mask(fimg, fr, geo.pixel1, i, mask=tmsk)
-                print('total masked pixels', tmsk.sum())
+                rbmsk = ring_blur_mask(img, r, geo.pixel1, i, mask=tmsk)
+                print('total masked pixels', np.product(img.shape) - tmsk.sum())
                 print('new masked pixels', rbmsk.sum() - tmsk.sum())
                 print('new masked pixels',
                       (rbmsk.sum() - tmsk.sum()) / tmsk.sum() * 100., '%')
                 print('pixels masked',
                       (rbmsk.sum() - tmsk.sum()) / img.size * 100., '%')
-                tmsk = tmsk | rbmsk
-            '''
-            img2 = img
-            img2[tmsk.reshape((2048, 2048)).astype(bool)] = 0
-            plt.imshow(img2)
-            plt.show()
-            fmsk_img = fimg[np.invert(tmsk)]
-            fmsk_q = fq[np.invert(tmsk)]
+                tmsk = tmsk * rbmsk
+            # '''
+            fmsk_img = fimg[tmsk]
+            fmsk_q = fq[tmsk]
 
             # Post masking data
             bs_args = (fmsk_q, fmsk_img)

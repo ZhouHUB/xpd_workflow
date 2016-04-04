@@ -40,11 +40,11 @@ def mask_edge(img_shape, edge_size):
     1darray:
         The raveled mask array, bad pixels are 0
     """
-    mask = np.zeros(img_shape)
-    mask[:, :edge_size] = 1
-    mask[:, -edge_size:] = 1
-    mask[:edge_size, :] = 1
-    mask[-edge_size:, :] = 1
+    mask = np.ones(img_shape)
+    mask[:, :edge_size] = 0
+    mask[:, -edge_size:] = 0
+    mask[:edge_size, :] = 0
+    mask[-edge_size:, :] = 0
     return mask.ravel().astype(bool)
 
 
@@ -64,16 +64,16 @@ def low_pixel_count_mask(img, geometry, bins, min_pixels, mask=None):
     return mask.astype(int)
 
 
-def ring_blur_mask(fimg, fr, rsize, alpha, bins=None, mask=None):
+def ring_blur_mask(img, r, rsize, alpha, bins=None, mask=None):
     """
     Perform a annular mask, which checks the ring statistics and masks any
     pixels which have a value greater or less than alpha * std away from the
     mean
     Parameters
     ----------
-    fimg: 1darray
+    img: 1darray
         The flattened image
-    fr: 1darray
+    r: 1darray
         The flattened array which maps pixels to radii
     alpha: float or 1darray
         Then number of acceptable standard deviations
@@ -89,36 +89,30 @@ def ring_blur_mask(fimg, fr, rsize, alpha, bins=None, mask=None):
     """
 
     if mask is None:
-        mask = np.zeros(img.shape).ravel().astype(bool)
-    int_r = np.around(fr / rsize).astype(int)
+        mask = np.ones(img.shape).astype(bool)
+    int_r = np.around(r / rsize).astype(int)
     if bins is None:
         bins = int_r.max() + 1
-    print(bins)
-    fmsk_img = fimg[np.invert(mask)]
-    fmsk_r = fr[np.invert(mask)]
+    if mask.shape != img.shape:
+        mask = mask.reshape(img.shape)
+    msk_img = img[mask]
+    msk_r = r[mask]
 
     # integration
-    mean = sts.binned_statistic(fmsk_r, fmsk_img, bins=bins,
-                                range=[0, fr.max()], statistic='mean')[0]
-    std = sts.binned_statistic(fmsk_r, fmsk_img, bins=bins,
-                               range=[0, fr.max()], statistic=np.std)[0]
-    print(mean)
-    print(mean.shape)
-    print(std.shape)
-    plt.plot(mean)
-    plt.plot(std)
-    plt.show()
+    mean = sts.binned_statistic(msk_r, msk_img, bins=bins,
+                                range=[0, r.max()], statistic='mean')[0]
+    std = sts.binned_statistic(msk_r, msk_img, bins=bins,
+                               range=[0, r.max()], statistic=np.std)[0]
     threshold = alpha * std
     lower = mean - threshold
     upper = mean + threshold
 
     # single out the too low and too high pixels
-    too_low = fmsk_img < lower[int_r]
-    too_hi = fmsk_img > upper[int_r]
+    too_low = img < lower[int_r]
+    too_hi = img > upper[int_r]
 
-    mask = mask | too_low | too_hi
-    mask = np.invert(mask.astype(bool))
-    return mask.astype(bool)
+    mask = mask * too_low * too_hi
+    return mask.astype(bool).ravel()
 
 
 def invert_mask(mask):
