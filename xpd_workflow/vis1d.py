@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class LineStackExplorer(QtGui.QMainWindow):
-    def __init__(self, key_list, data_list, parent=None):
+    def __init__(self, key_list, data_list, name='StackExplorer',parent=None):
         QtGui.QMainWindow.__init__(self, parent=parent)
-        self.setWindowTitle('StackExplorer')
+        self.setWindowTitle(name)
         self._main_window = Stack1DMainWindow(data_list=data_list,
                                               key_list=key_list,
                                               cmap='viridis'
@@ -36,23 +36,37 @@ if __name__ == '__main__':
     # folder = '/media/sf_Data/5/S5/temp_exp'
     # folder = '/media/sf_Data/18/S18/temp_exp'
     # folder = '/media/sf_Data/S6/'
-    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/multi_sample/test'
-    # key_list = [f for f in os.listdir(folder) if f.endswith('.gr')]
-    # key_list = [f for f in os.listdir(folder) if f.endswith('.fq')]
-    key_list = [f for f in os.listdir(folder) if f.endswith('.chi')]
-    key_list.sort()
-    # key_list = key_list[::20]
-    key_list = key_list
-    print(len(key_list))
-    if key_list[0].endswith('.gr') or key_list[0].endswith('.fq'):
+    i = 6
+    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/S'+str(i)+'/temp_exp'
+    key_list1 = [f for f in os.listdir(folder) if f.endswith('.gr')]
+    key_list2 = [f for f in os.listdir(folder) if f.endswith('.fq')]
+    # key_list = [f for f in os.listdir(folder) if f.endswith('.chi')]
+    key_list1.sort()
+    key_list2.sort()
+    if key_list1[0].endswith('.gr') or key_list2[0].endswith('.fq'):
         skr = 27
     else:
-        skr=4
-    data_list = [(np.loadtxt(os.path.join(folder, f), skiprows=skr)[:, 0],
-                  np.loadtxt(os.path.join(folder, f), skiprows=skr)[:, 1]) for f
-                 in key_list]
+        skr = 4
+    data_list1 = [(np.loadtxt(os.path.join(folder, f),
+                             # skiprows=skr
+                             )[:, 0],
+                  np.loadtxt(os.path.join(folder, f),
+                             # skiprows=skr
+                             )[:, 1])
+                 for f
+                 in key_list1]
+    data_list2 = [(np.loadtxt(os.path.join(folder, f),
+                              # skiprows=skr
+                              )[:, 0],
+                   np.loadtxt(os.path.join(folder, f),
+                              # skiprows=skr
+                              )[:, 1])
+                  for f
+                  in key_list2]
 
     app = QtGui.QApplication(sys.argv)
-    tt = LineStackExplorer(key_list, data_list)
+    tt = LineStackExplorer(key_list1, data_list1, name='S{} PDF'.format(i))
+    tt2 = LineStackExplorer(key_list2, data_list2, name='S{} FQ'.format(i))
     tt.show()
+    tt2.show()
     sys.exit(app.exec_())
