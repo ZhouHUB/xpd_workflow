@@ -10,6 +10,7 @@ import scipy.signal
 import quantities as pq
 import matplotlib
 import matplotlib.pyplot as plt
+from mask_tools import *
 
 plt.ioff()
 font = {'family': 'normal',
@@ -23,7 +24,7 @@ def lamda_from_bragg(th, d, n):
     return 2 * d * np.sin(th / 2.) / n
 
 
-def find_peaks(chi, sides=6):
+def find_peaks(chi, sides=6, intensity_threshold=0):
     # Find all potential peaks
     preliminary_peaks = scipy.signal.argrelmax(chi, order=20)[0]
 
@@ -35,6 +36,7 @@ def find_peaks(chi, sides=6):
     # be more than twice the height at sides pixels away
     criteria = chi[preliminary_peaks2] >= 2 * chi[preliminary_peaks2 + sides]
     criteria *= chi[preliminary_peaks2] >= 2 * chi[preliminary_peaks2 - sides]
+    criteria *= chi[preliminary_peaks2] >= intensity_threshold
 
     peaks = preliminary_peaks[np.where(criteria)]
 
@@ -45,26 +47,34 @@ def find_peaks(chi, sides=6):
 
 
 def calibrate_energy(stack, calibs, relative_positions, calibration_file,
-                     sides=12):
+                     sides=12, intensity_threshold=6000):
     stack_peaks = []
     # For every image in the routine find the peaks
     for s, calib, pos in zip(stack, calibs, relative_positions):
         if not isinstance(s, np.ndarray):
-            img = np.rot90(s[0], 3)
+            # img = np.rot90(s[0], 3)
+            img = s[0]
         if isinstance(calib, str):
             geo = pyFAI.load(calib)
         elif isinstance(calib, dict):
             geo = pyFAI.geometry.Geometry(**calib)
 
         r = geo.rArray(img.shape) * pq.m
-        r[r < .01] = -1. * pq.m
+        # r[r < .01] = -1. * pq.m
         res = geo.pixel1 * pq.m
         bins = np.arange(0. * pq.m, r.max(), res)
-        chi = scipy.stats.binned_statistic(r.ravel(), img.ravel(),
-                                           statistic='mean',
-                                           bins=bins, range=(0, np.max(r)))[0]
+        mask = np.ones(img.shape, dtype=bool)
+        mask *= mask_edge(img.shape, 30)
+        mask *= ring_blur_mask(img, r.magnitude, geo.pixel1, 2,
+                               mask=mask)
+        bs_kwargs = {'statistic': (np.median,),
+                     'bins': bins,
+                     'range': [0, r.max()]}
 
-        lidxs, ridxs, peak_centers = find_peaks(chi, sides=sides)
+        a, x = binstats(r[mask], img[mask], **bs_kwargs)
+        chi = np.asarray(a[0])
+        lidxs, ridxs, peak_centers = find_peaks(
+            chi, sides=sides, intensity_threshold=intensity_threshold)
 
         fitted_peak_centers = []
         for lidx, ridx, peak_center in zip(lidxs, ridxs,
@@ -79,11 +89,12 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
             # center = out.values['center'] * pq.m
             # get peak center from out
             fitted_peak_centers.append(center)
+        print(fitted_peak_centers)
         stack_peaks.append(fitted_peak_centers)
 
         # print fitted_peak_centers
-        plt.plot(bins[:-1], chi)
-        plt.plot(bins[:-1][peak_centers], chi[peak_centers], 'ro')
+        plt.plot(x, chi)
+        plt.plot(x[peak_centers], chi[peak_centers], 'ro')
     plt.show()
     # pair two detector positions
     D0s = np.zeros(len(stack_peaks)) * pq.mm
@@ -133,8 +144,9 @@ def calibrate_energy(stack, calibs, relative_positions, calibration_file,
         else:
             nplams = np.concatenate((nplams, l))
             npe = np.concatenate((npe, e_ele))
-    print np.mean(nplams * pq.angstrom), np.std(nplams)
-    print np.mean(npe * pq.keV), np.std(npe)
+    print(nplams, npe)
+    print np.mean(nplams), np.std(nplams)
+    print np.mean(npe), np.std(npe)
     # need a way to correctly average the positions
 
 
@@ -147,11 +159,11 @@ if __name__ == '__main__':
     from pims.tiff_stack import TiffSeries
 
     calibrant = os.path.join('/mnt/bulk-data/research_data/energy_calib2',
-                                  'Ni03.cal')
+                             'Ni03.cal')
     # dir_name = '/mnt/bulk-data/research_data/energy_calib2'
-    dir_name = '/mnt/bulk-data/Dropbox/Temp-Data'
+    dir_name = '/mnt/bulk-data/Dropbox/Temp-Data (2)'
     num = [0, 1, 3, 4]
-    f_stem = 'Ni_STD_14p3_acnd-000'
+    f_stem = 'Ni_STD_2rev_asc-000'
     f_names = [os.path.join(dir_name, f_stem + str(i).zfill(2))
                for i in num]
     calibs = [f + '.poni' for f in f_names]
