@@ -1,4 +1,5 @@
 from __future__ import division
+
 __author__ = 'christopher'
 
 import numpy as np
@@ -6,7 +7,41 @@ import scipy.stats as sts
 from copy import deepcopy as dc
 import math
 import os
-import matplotlib.pyplot as plt
+from multiprocessing import Pool
+
+
+def inner_loop(task):
+    inds, x, values, bin_idx, funcs = task
+    return [f(values[inds == bin_idx]) for f in funcs]
+
+
+def binstats(x, values, bins=10, statistic=(np.mean,), range=None,
+             parallel=True):
+    if isinstance(bins, int):
+        if range:
+            bins = np.linspace(range[0], range[1], bins)
+        else:
+            bins = np.arange(bins)
+    if hasattr(statistic, '__call__'):
+        statistic = (statistic, )
+
+    inds = np.digitize(x, bins[:-1])
+    inds2 = np.unique(inds)
+    task_list = [(inds, x, values, bin_idx, statistic) for bin_idx in inds2]
+    if parallel:
+        p = Pool()
+        pres = p.map(inner_loop, task_list)
+        res = map(np.asarray, zip(*pres))
+        p.close()
+        p.join()
+    else:
+        res = map(np.asarray, zip(
+            *[inner_loop(t) for t in task_list]
+        ))
+    statistics = [np.zeros_like(bins) for f in statistic]
+    for i, f in enumerate(statistic):
+        statistics[i][inds2] = res[i]
+    return statistics, bins
 
 
 def mask_beamstop(pixel_positions, beamstop_radius, mask=None):
@@ -40,12 +75,9 @@ def mask_edge(img_shape, edge_size):
     1darray:
         The raveled mask array, bad pixels are 0
     """
-    mask = np.ones(img_shape)
-    mask[:, :edge_size] = 0
-    mask[:, -edge_size:] = 0
-    mask[:edge_size, :] = 0
-    mask[-edge_size:, :] = 0
-    return mask.ravel().astype(bool)
+    mask = np.zeros(img_shape, dtype=bool)
+    mask[edge_size:-edge_size, edge_size:-edge_size] = True
+    return mask
 
 
 def low_pixel_count_mask(img, geometry, bins, min_pixels, mask=None):
@@ -101,10 +133,10 @@ def ring_blur_mask(img, r, rsize, alpha, bins=None, mask=None):
     msk_r = r[mask]
 
     # integration
-    mean = sts.binned_statistic(msk_r, msk_img, bins=bins,
-                                range=[0, r.max()], statistic='mean')[0]
-    std = sts.binned_statistic(msk_r, msk_img, bins=bins,
-                               range=[0, r.max()], statistic=np.std)[0]
+    a, x = binstats(msk_r, msk_img, bins=bins,
+                            statistic=(np.mean, np.std),
+                            range=[0, r.max()])
+    mean, std = a
     if type(alpha) is tuple:
         alpha = np.linspace(alpha[0], alpha[1], bins)
     threshold = alpha * std
@@ -116,7 +148,7 @@ def ring_blur_mask(img, r, rsize, alpha, bins=None, mask=None):
     too_hi = img > upper[int_r]
 
     mask = mask * ~too_low * ~too_hi
-    return mask.astype(bool).ravel()
+    return mask.astype(bool)
 
 
 def invert_mask(mask):
@@ -198,7 +230,6 @@ if __name__ == '__main__':
     from matplotlib.colors import LogNorm
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
 
-
     # load experiment information
     geo = pyFAI.load(
         '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Ni_STD/Ni_PDF_60s-00000.poni'
@@ -207,14 +238,14 @@ if __name__ == '__main__':
     )
 
     # start_mask = fabio.open(
-        # '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/xpd_pdf_beamstop.msk'
-        # '/mnt/bulk-data/research_data/Low T-MST-summed/low_T_mst.msk'
+    # '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/xpd_pdf_beamstop.msk'
+    # '/mnt/bulk-data/research_data/Low T-MST-summed/low_T_mst.msk'
     # ).data
     # start_mask = np.zeros((2048, 2048)).astype(bool)
     # start_mask = np.flipud(start_mask)
     start_mask = np.load(
         '/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_Cold/xpd_pdf_mask_Au2nm_60s_120K_sum.npy'
-        )
+    )
 
     # load images
     # folder, name = ('/mnt/bulk-data/research_data/USC_beamtime/08-05-2015/2015-08-05/Au2nm_Temp/Au2nm_300-400', 'Au2nm_300-400')
