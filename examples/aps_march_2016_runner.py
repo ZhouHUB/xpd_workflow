@@ -1,82 +1,99 @@
+'''
+This code will take a bunch of folders containing a configuration file and
+data tiffs and perform:
+1) read in all the not raw and not dark images in the folder
+
+'''
 import os
 import ConfigParser
 from xpd_workflow.mask_tools import *
+from pims.tiff_stack import TiffStack_tifffile as TiffStack
+from skbeam.io.save_powder_output import save_output
 import fabio
+import pyFAI
 
-# move to the target folder
-target_folder = '/media/usb0/Beamtime/APS_March_2016/1'
-os.chdir(target_folder)
+plot = True
+save = False
+target_folders = ['/path/to/folder']
 
-# get all the files in the folder which are appropriate
-files = [f for f in os.listdir('.') if
-         f.endswith('.tif') and 'raw' not in f and 'dark' not in f]
-# Load the images
-img_stack = [TiffStack(f) for f in files]
-imgs = [np.rot90(s[0], 3) for s in img_stack]
+for target_folder in target_folders:
+    # move to the target folder
+    os.chdir(target_folder)
+    total_files = os.listdir('.')
+    config_files = [f for f in total_files if f.startswith('config') and f.endswith('.txt')]
+    for config_file in config_files:
+        config = ConfigParser.ConfigParser()
+        config.read(config_file)
+        file_stem = config.get('sample_info', 'file_stem')
 
-# sum the images
-img = np.sum(imgs, 0)
 
-# get the pyFAI geometry
-config = ConfigParser.ConfigParser()
-config.read('config.txt')
+        # get all the files in the folder which are appropriate
+        files = [f for f in os.listdir('.') if
+                 f.endswith('.tif') and 'raw' not in f and 'dark' not in f]
+        # Load the images
+        img_stack = [TiffStack(f) for f in files]
+        imgs = [np.rot90(s[0], 3) for s in img_stack]
 
-config_folder = config.get('beamline_info', 'configuration_folder')
-start_mask_file = config.get('beamline_info', 'mask_file')
-config_file = [f for f in os.listdir(config_folder) if f.endswith('.poni')][0]
-geo = pyFAI.load(config_file)
+        # sum the images
+        img = np.sum(imgs, 0)
 
-img /= geo.polarization(shape=img.shape, factor=.95)
+        # get the pyFAI geometry
 
-if start_mask_file.endswith('.npy'):
-    start_mask = np.load(start_mask)
-elif start_mask_file.endswith('.msk'):
-    start_mask = fabio.open(start_mask_file).data
-    # We may need to flip the mask
 
-start_mask = np.flipud(start_mask)
-msk0 = mask_beamstop(geo, .005)
-msk1 = mask_edge(img, 10)
-msk2 = mask_radial_edge(img, geo, 310)
+        poni_file = config.get('beamline_info', 'configuration_file')
+        geo = pyFAI.load(poni_file)
 
-initial_mask = msk0 | msk1 | msk2 | start_mask
-tmsk = msk0 | msk1 | msk2 | start_mask
+        start_mask_file = config.get('beamline_info', 'mask_file')
+        if os.path.exists(start_mask_file):
+            start_mask = fabio.open(start_mask_file).data
+            start_mask = np.flipud(start_mask)
+        else:
+            start_mask = np.zeros(img.shape)
 
-for i in [10,
-          9, 8, 7, 6,
-          5, 4.5, 4
-          ]:
-    print i
-    rbmsk = ring_blur_mask(img, geo, i, mask=tmsk)
-    print 'total masked pixels', tmsk.sum()
-    print 'new masked pixels', rbmsk.sum() - tmsk.sum()
-    print 'new masked pixels', (
-                                   rbmsk.sum() - tmsk.sum()) / tmsk.sum() * 100, '%'
-    print 'pixels masked', (rbmsk.sum() - tmsk.sum()) / img.size * 100, '%'
-    tmsk = tmsk | rbmsk
+        img /= geo.polarization(shape=img.shape, factor=.95)
 
-tmsk = tmsk.astype(np.bool)
-r = geo.qArray(img.shape)
-bins = 2000
+        msk0 = mask_beamstop(img, geo, .005)
+        msk1 = mask_edge(img, 10)
+        msk2 = mask_radial_edge(img, geo, 310)
 
-# integration
-median = sts.binned_statistic(r.ravel(), img.ravel(), bins=bins,
-                              range=[0, r.max()], statistic='median')
-mean = sts.binned_statistic(r.ravel(), img.ravel(), bins=bins,
-                            range=[0, r.max()], statistic='mean')
-std = sts.binned_statistic(r.ravel(), img.ravel(), bins=bins,
-                           range=[0, r.max()], statistic=np.std)
+        initial_mask = msk0 | msk1 | msk2 | start_mask
+        tmsk = msk0 | msk1 | msk2 | start_mask
 
-mr = dc(r)
-mr[tmsk.astype(np.bool)] = -1
+        for i in [10,
+                  9, 8, 7, 6,
+                  5, 4.5, 4
+                  ]:
+            print i
+            rbmsk = ring_blur_mask(img, geo, i, mask=tmsk)
+            print 'total masked pixels', tmsk.sum()
+            print 'new masked pixels', rbmsk.sum() - tmsk.sum()
+            print 'new masked pixels', (
+                                           rbmsk.sum() - tmsk.sum()) / tmsk.sum() * 100, '%'
+            print 'pixels masked', (rbmsk.sum() - tmsk.sum()) / img.size * 100, '%'
+            tmsk = tmsk | rbmsk
 
-msk_median = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
-                                  range=[0, mr.max()], statistic='median')
-msk_mean = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
-                                range=[0, mr.max()], statistic='mean')
-msk_std = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
-                               range=[0, mr.max()], statistic=np.std)
+        tmsk = tmsk.astype(np.bool)
+        r = geo.qArray(img.shape)
+        bins = 2000
 
-msk_median_out = np.nan_to_num(msk_median[0])
-save_output(msk_median[1][:-1] / 10., msk_median_out,
-            os.path.join(folder, 'median'), 'Q')
+        # integration
+        median = sts.binned_statistic(r.ravel(), img.ravel(), bins=bins,
+                                      range=[0, r.max()], statistic='median')
+        mean = sts.binned_statistic(r.ravel(), img.ravel(), bins=bins,
+                                    range=[0, r.max()], statistic='mean')
+        std = sts.binned_statistic(r.ravel(), img.ravel(), bins=bins,
+                                   range=[0, r.max()], statistic=np.std)
+
+        mr = dc(r)
+        mr[tmsk.astype(np.bool)] = -1
+
+        msk_median = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
+                                          range=[0, mr.max()], statistic='median')
+        msk_mean = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
+                                        range=[0, mr.max()], statistic='mean')
+        msk_std = sts.binned_statistic(mr.ravel(), img.ravel(), bins=bins,
+                                       range=[0, mr.max()], statistic=np.std)
+
+        msk_median_out = np.nan_to_num(msk_median[0])
+        save_output(msk_median[1][:-1] / 10., msk_median_out,
+                    os.path.join(folder, 'median'), 'Q')
