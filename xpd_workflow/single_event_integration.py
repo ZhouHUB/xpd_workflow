@@ -44,5 +44,11 @@ def single_mask_integration(img, geo, tmsk=None):
     y = median[0]
     return x, y
 
-def single_event_workflow(event_or_equivalent):
+
+def single_event_workflow(foreground_event, background_event, geos):
+    fg_x, fg_y = single_mask_integration()
+    # Mask/Integrate the foreground
+    # Mask/Integrate the background
+    # Subtract the background
+    # PDFgetx3
     pass
