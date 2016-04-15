@@ -34,11 +34,11 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/S1/temp_exp'
-    # key_list1 = [f for f in os.listdir(folder) if f.endswith('.gr')]
-    # key_list2 = [f for f in os.listdir(folder) if f.endswith('.fq')]
-    key_list1 = [f for f in os.listdir(folder) if
-                 f.endswith('.chi') and not f.startswith('d') and f.strip('0.chi') != '' and int(
-                     f.lstrip('0').strip('.chi')) % 2 == 1]
+    key_list1 = [f for f in os.listdir(folder) if f.endswith('.gr')]
+    # key_list1 = [f for f in os.listdir(folder) if f.endswith('.fq')]
+    # key_list1 = [f for f in os.listdir(folder) if
+    #              f.endswith('.chi') and not f.startswith('d') and f.strip('0.chi') != '' and int(
+    #                  f.lstrip('0').strip('.chi')) % 2 == 1]
     key_list1.sort()
     print(key_list1)
     # if key_list1[0].endswith('.gr') or key_list2[0].endswith('.fq'):
@@ -46,10 +46,10 @@ if __name__ == '__main__':
     # elif key_list1[0].endswith('.chi'):
     #     skr = 4
     data_list1 = [(np.loadtxt(os.path.join(folder, f),
-                              skiprows=8
+                              # skiprows=8
                               )[:, 0],
                    np.loadtxt(os.path.join(folder, f),
-                              skiprows=8
+                              # skiprows=8
                               )[:, 1])
                   for f in key_list1]
 

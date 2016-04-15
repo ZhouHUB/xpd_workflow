@@ -24,9 +24,9 @@ if __name__ == '__main__':
     import numpy as np
     import matplotlib.pyplot as plt
 
-    save = True
+    save = False
     ns = [1, 2, 3, 4, 5, 18, 20, 22, 16, 28, 29, 27, 26]
-    offset = .001
+    offset = .1
     # ns = [26]
     ns.sort()
     for i in ns:
@@ -39,10 +39,13 @@ if __name__ == '__main__':
         df = dm.to_sparse_dataframe()
         print(df.keys())
         binned = dm.bin_on('img', interpolation={'T': 'linear'})
+
         key_list = [f for f in os.listdir(folder) if
-                    f.endswith('.chi') and not f.startswith('d') and f.strip(
-                        '0.chi') != '' and int(
-                        f.lstrip('0').strip('.chi')) % 2 == 1]
+                    f.endswith('.gr') and not f.startswith('d')]
+        # key_list = [f for f in os.listdir(folder) if
+        #             f.endswith('.chi') and not f.startswith('d') and f.strip(
+        #                 '0.chi') != '' and int(
+        #                 f.lstrip('0').strip('.chi')) % 2 == 1]
         key_list.sort()
         key_list = key_list[:-1]
         # key_list2.sort()
@@ -76,7 +79,7 @@ if __name__ == '__main__':
             for idx in range(len(key_list)):
                 x, y = data_list[idx]
                 colorVal = scalarMap.to_rgba(idx)
-                ax1.plot(x[:xmax] * .10, y[:xmax] + idx * offset,
+                ax1.plot(x[:xmax], y[:xmax] + idx * offset,
                          color=colorVal)
                 ax2.plot(Ts[idx], y[-1] + idx * offset, marker='o',
                          color=colorVal)
@@ -87,9 +90,9 @@ if __name__ == '__main__':
                 bnds = ['O-Pr', 'O-Ni', 'Ni-Ni', 'Pr-Pr', 'Ni-Pr', 'O-Pr',
                         'O-Ni',
                         'Ni-Ni-Ni', 'Pr-Ni', 'Pr-Pr', 'Pr-Ni-O', 'Ni-Pr-Ni',
-                        'Pr-Pr']
+                        'Pr-Pr', 'Rs:Pr-Pr', 'Rs:Pr_Pr']
                 bnd_lens = [2.320, 1.955, 3.883, 3.765, 3.186, 2.771, 2.231,
-                            7.767, 4.426, 6.649, 4.989, 5.404, 3.374]
+                            7.767, 4.426, 6.649, 4.989, 5.404, 3.374, 3.910, 8.801]
                 # ax1.grid(True)
                 # ax2.grid(True)
                 for bnd, bnd_len in zip(bnds, bnd_lens):
@@ -104,10 +107,10 @@ if __name__ == '__main__':
                 ax1.set_xlabel(r"$r (\AA)$")
                 ax1.set_ylabel(r"$G (\AA^{-2})$")
             elif output == 'gr':
-                fig.suptitle('S{} PDF'.format(i))
+                fig.suptitle('S{} I(Q)'.format(i))
                 ax2.set_xlabel('Temperature C')
                 ax1.set_xlabel(r"$Q (\AA^{-1})$")
-                ax1.set_ylabel(r"$I $")
+                ax1.set_ylabel(r"$I (Q) $")
             gs.tight_layout(fig, rect=[0, 0, 1, 1], w_pad=1e-6)
 
             if save:

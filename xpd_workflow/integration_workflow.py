@@ -20,17 +20,18 @@ mds_db_connect(
     **{'database': 'data-processing-dev', 'host': 'localhost', 'port': 27017})
 
 
-def main(plot=False):
+def main(plot=True, super_plot=False):
     # Get headers of interest
     hdrs = db(
-        is_calibration=False
+        run_folder='/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/S1/temp_exp'
+        # is_calibration=False
         # is_calibration=True
     )
     # Get the background header and mux it's events
     bg_hdr = db(
         run_folder='/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/'
                    'Quartz_Background/temp_exp')
-    
+
     bg_dm = DataMuxer()
     bg_dm.append_events(get_events(bg_hdr))
     bg_binned = bg_dm.bin_on('img', interpolation={'T': 'linear'})
@@ -53,7 +54,7 @@ def main(plot=False):
         # start_masks = [retrieve(p) for p in hdr['start']['mask']]
 
         # Give the datamuxer our data
-        
+
         dm = DataMuxer()
         dm.append_events(get_events(hdr))
         df = dm.to_sparse_dataframe()
@@ -102,12 +103,11 @@ def main(plot=False):
                                                         mask=total_mask_dict[
                                                             detz])
                 total_mask = total_mask_dict[detz]
-                if plot:
+                if super_plot:
                     plt.imshow(total_mask, interpolation='None')
                     plt.show()
             else:
                 total_mask = total_mask_dict[detz]
-
 
             # Post masking data
             median, x = binstats(q[total_mask], img[total_mask],
@@ -139,7 +139,8 @@ def main(plot=False):
                     # print('normalize bg by', bg_binned['I0'].values[bg_idx] * \
                     #          bg_binned.metadata.values[bg_idx][0]['summedexposures'])
                     bg_chi = bg_chi[0] / bg_binned['I0'].values[bg_idx] / \
-                             bg_binned.metadata.values[bg_idx][0]['summedexposures']
+                             bg_binned.metadata.values[bg_idx][0][
+                                 'summedexposures']
                     # bg_chi = bg_chi[0]
 
             else:
@@ -153,19 +154,23 @@ def main(plot=False):
             bg_y = bg_chi * bg_scale
             # bg_y = i0 * bg_chi / bg_binned.I0.values[bg_idx] * 1.5
             bg_sub_y = y - bg_y
-            if detz>30.:
+            if detz > 30.:
                 print('max intensity', np.max(bg_sub_y))
                 print('I0', i0)
                 print('summed images', md['summedexposures'])
                 print('bg i0', bg_binned['I0'].values[bg_idx])
-                print('bg summed images', bg_binned.metadata.values[bg_idx][0]['summedexposures'])
+                print('bg summed images',
+                      bg_binned.metadata.values[bg_idx][0]['summedexposures'])
 
             if detz < 30.:
                 if not plot:
                     save_output(x, bg_sub_y, str(i).zfill(5), q_or_2theta='Q',
                                 dir_path=hdr['start']['run_folder'])
                 z = PDFGetter()
-                d1 = {'qmin': 1.5, 'qmax': 29.5, 'qmaxinst': 29.5, 'rpoly': .9,
+                d1 = {'qmin': 1.5,
+                      # 'qmax': 29.5, 'qmaxinst': 29.5,
+                      'qmax': 34., 'qmaxinst': 34.,
+                      'rpoly': .9,
                       'rmax': 40.,
                       'composition': 'Pr2NiO4', 'dataformat': 'Qnm',
                       }

@@ -24,7 +24,7 @@ if __name__ == '__main__':
     import numpy as np
     import matplotlib.pyplot as plt
 
-    save = True
+    save = False
     print('save', save)
     offset = .002
     output = 'chi'
@@ -33,7 +33,7 @@ if __name__ == '__main__':
         # [1, 16, 18, 20, 22]
     ]:
         ns.sort()
-        for event_idx, event_name in zip([0, 54 // 2, -2],
+        for event_idx, event_name in zip([1, 54 // 2, -3],
                                          ['initial', 'high temp', 'final']):
             for xmin, xmax, n in zip([
                 # 0, 1000, 3000,
@@ -93,10 +93,14 @@ if __name__ == '__main__':
                 fig.suptitle(
                     'S{}-{} PDF {}, {}'.format(min(ns), max(ns), n,
                                                event_name))
-                ax1.set_xlabel(r"$r (\AA)$")
-                ax1.set_ylabel(r"$G (\AA^{-2})$")
+                if output == 'gr':
+                    ax1.set_xlabel(r"$r (\AA)$")
+                    ax1.set_ylabel(r"$G (\AA^{-2})$")
+                else:
+                    ax1.set_xlabel(r"$Q (\AA^{-1})$")
+                    ax1.set_ylabel(r"$I (Q)$")
                 ax1.legend(loc='best')
-                fig.tight_layout(rect=[0, 0, 1, 1], w_pad=1e-6)
+                fig.tight_layout(rect=[0, 0, 1, .95], w_pad=1e-6)
                 if save:
                     fig.savefig(os.path.join(
                         '/mnt/bulk-data/Dropbox/',
