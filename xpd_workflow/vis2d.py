@@ -36,19 +36,19 @@ if __name__ == '__main__':
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     import fabio
 
-    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/multi_sample'
+    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/Cell/mv_run'
     file_names = [f for f in os.listdir(folder) if
                   f.endswith('.tif') and 'raw' not in f and 'dark' not in f
                   and 'd95' not in f]
     print(file_names)
     files = [os.path.join(folder, f) for f in file_names]
     files.sort()
-    files = files[:]
+    files = files[:1]
     img_stack = [TiffStack(f) for f in files]
 
     imgs = [np.rot90(s[0], 3) for s in img_stack]
-    a = imgs[0] - imgs[1]
-    imgs = [s + np.abs(s.min()) + .1 for s in imgs]
+    # a = imgs[0] - imgs[1]
+    # imgs = [s + np.abs(s.min()) + .1 for s in imgs]
     key_list = files
     data_list = imgs
     app = QtGui.QApplication(sys.argv)
