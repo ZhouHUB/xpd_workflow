@@ -22,7 +22,7 @@ class StackExplorer(QtGui.QMainWindow):
         self._main_window = CrossSectionMainWindow(data_list=data_list,
                                                    key_list=key_list,
                                                    cmap='viridis',
-                                                   norm='log',
+                                                   # norm='log',
                                                    intensity_scaling='percentile',
                                                    img_min=5.,
                                                    img_max=95.)
@@ -36,10 +36,11 @@ if __name__ == '__main__':
     from pims.tiff_stack import TiffStack_tifffile as TiffStack
     import fabio
 
-    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/Cell/mv_run'
-    file_names = [f for f in os.listdir(folder) if
-                  f.endswith('.tif') and 'raw' not in f and 'dark' not in f
-                  and 'd95' not in f]
+    folder = '/mnt/bulk-data/research_data/USC_beamtime/APS_March_2016/more_cells'
+    # file_names = [f for f in os.listdir(folder) if
+    #               f.endswith('.tif') and 'raw' not in f and 'dark' not in f
+    #               and 'd95' not in f]
+    file_names = ['S30_d95-00013.tif']
     print(file_names)
     files = [os.path.join(folder, f) for f in file_names]
     files.sort()
